@@ -1,86 +1,62 @@
-import tweepy
 import requests
 import time
 
-# ==== Cấu hình cố định ====
+# === Cấu hình ===
 TELEGRAM_TOKEN = '7970022703:AAEFU0v_402lujK3-FHkP6xW0NXKeteco3U'
 TELEGRAM_CHAT_ID = '-1001875640464'
-BEARER_TOKEN = 'AAAAAAAAAAAAAAAAAAAAAA5n2gEAAAAA26eHEzWzzxcv%2FPF6qWgLhkX7tIY%3DMcYpMvmrA2wGHiDmZiw4N6dQfmcSCsfXZ5Co5xOwkZUUFw4BeE'
+BEARER_TOKEN = 'AAAAAAAAAAAAAAAAAAAAAA5n2gEAAAAALRZu85jICz2w1EgailHagT3HtIk%3DSb4q6gejim2qIlOrLgKUGdWn1x45lLj2Y2N3VqoliZ6VNUGzt5'
 
-# ==== Username → ID thủ công (khỏi cần gọi API) ====
-USER_MAP = {
-    "JnP6900erc": "1644057593241622529",
-    "elonmusk": "44196397",
-    "cz_binance": "1150512580",
-    "VitalikButerin": "295218901"
+# === Map username → user_id ===
+TWITTER_USERS = {
+    'JnP6900erc': '1644057593241622529',
+    'elonmusk': '44196397',
+    'cz_binance': '1150512580',
+    'VitalikButerin': '295218901'
 }
 
-# ==== Gửi tin nhắn Telegram ====
-def send_telegram(text):
+# === Lưu trạng thái tweet cuối ===
+last_tweet_ids = {}
+
+# === Gửi Telegram ===
+def send_telegram_message(text):
     url = f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage'
     data = {'chat_id': TELEGRAM_CHAT_ID, 'text': text}
     try:
         r = requests.post(url, data=data)
         if r.status_code != 200:
-            print(f'⚠️ Telegram Error: {r.text}')
+            print(f'⚠️ Telegram lỗi: {r.text}')
     except Exception as e:
         print(f'⚠️ Lỗi gửi Telegram: {e}')
 
-# ==== Stream class ====
-class RetweetStream(tweepy.StreamingClient):
-    def on_tweet(self, tweet):
-        try:
-            if tweet.referenced_tweets:
-                for ref in tweet.referenced_tweets:
-                    if ref['type'] == 'retweeted':
-                        uid = tweet.author_id
-                        username = id_to_username.get(uid, f"user_{uid}")
-                        text = tweet.text
-                        url = f"https://x.com/{username}/status/{tweet.id}"
-                        msg = f"🔁 Retweet từ @{username}:\n\n{text}\n\n{url}"
-                        print(f"[📡] {msg}")
-                        send_telegram(msg)
-                        break
-        except Exception as e:
-            print(f'⚠️ Lỗi xử lý tweet: {e}')
-
-    def on_connection_error(self):
-        print('⚠️ Mất kết nối tới stream. Disconnect...')
-        self.disconnect()
-
-# ==== Chạy stream chính ====
-def run_stream():
-    stream = RetweetStream(BEARER_TOKEN)
-
-    # Xoá rule cũ (nếu có)
+# === Lấy tweet mới nhất của user ===
+def get_latest_tweet(user_id):
+    url = f'https://api.twitter.com/2/users/{user_id}/tweets?max_results=5&tweet.fields=created_at'
+    headers = {'Authorization': f'Bearer {BEARER_TOKEN}'}
     try:
-        rules = stream.get_rules()
-        if rules.data:
-            stream.delete_rules([r.id for r in rules.data])
-    except:
-        pass
+        r = requests.get(url, headers=headers)
+        r.raise_for_status()
+        tweets = r.json().get('data', [])
+        return tweets[0] if tweets else None
+    except Exception as e:
+        print(f'⚠️ Lỗi khi lấy tweet user {user_id}: {e}')
+        return None
 
-    # Thêm rule mới
-    for uid in USER_MAP.values():
-        try:
-            stream.add_rules(tweepy.StreamRule(f"from:{uid}"))
-        except Exception as e:
-            print(f'⚠️ Lỗi thêm rule {uid}: {e}')
-
-    print(f"🚀 Bắt đầu stream theo dõi: {', '.join(USER_MAP.keys())}")
-    stream.filter(tweet_fields=["referenced_tweets", "author_id", "text"])
-
-# ==== Main chạy vĩnh viễn ====
+# === Bot chạy vĩnh viễn ===
 def main():
-    global id_to_username
-    id_to_username = {v: k for k, v in USER_MAP.items()}
-    
+    print(f"👀 Đang theo dõi: {', '.join(TWITTER_USERS.keys())}")
+
     while True:
-        try:
-            run_stream()
-        except Exception as e:
-            print(f'💥 Lỗi stream: {e} → Restart sau 15s')
-            time.sleep(15)
+        for username, user_id in TWITTER_USERS.items():
+            tweet = get_latest_tweet(user_id)
+            if tweet:
+                tweet_id = tweet['id']
+                if last_tweet_ids.get(username) != tweet_id:
+                    url = f"https://x.com/{username}/status/{tweet_id}"
+                    msg = f"🧵 Tweet mới từ @{username}:\n\n{tweet['text']}\n\n{url}"
+                    send_telegram_message(msg)
+                    last_tweet_ids[username] = tweet_id
+                    print(f"[+] Đã gửi tweet mới của @{username}")
+        time.sleep(60)
 
 if __name__ == '__main__':
     main()
