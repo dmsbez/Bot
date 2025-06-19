@@ -8,7 +8,7 @@ BEARER_TOKEN = 'AAAAAAAAAAAAAAAAAAAAAA5n2gEAAAAA26eHEzWzzxcv%2FPF6qWgLhkX7tIY%3D
 
 # ==== Danh sách Twitter usernames ====
 TWITTER_USERNAMES = ['JnP6900erc', 'elonmusk', 'cz_binance', 'VitalikButerin']
-CHECK_INTERVAL = 10  # giây
+CHECK_INTERVAL = 60  # giây
 
 # ==== Lưu trạng thái tweet cuối cùng của mỗi user ====
 last_tweet_ids = {}
