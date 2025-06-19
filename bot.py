@@ -9,8 +9,6 @@ BEARER_TOKEN = 'AAAAAAAAAAAAAAAAAAAAAA5n2gEAAAAA26eHEzWzzxcv%2FPF6qWgLhkX7tIY%3D
 TWITTER_USERS = {
     'JnP6900erc': '1644057593241622529',
     'elonmusk': '44196397',
-    'cz_binance': '1150512580',
-    'VitalikButerin': '295218901'
 }
 
 last_tweet_ids = {}
@@ -58,7 +56,7 @@ def main():
                 print(f"[+] Gửi tweet của @{username}")
 
         index = (index + 1) % len(usernames)
-        time.sleep(20)  # mỗi user cách nhau 20s → đủ giãn
+        time.sleep(30)  # mỗi user cách nhau 20s → đủ giãn
 
 if __name__ == '__main__':
     main()
