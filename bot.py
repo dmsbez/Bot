@@ -1,12 +1,11 @@
 import requests
 import time
 
-# === Cấu hình ===
+# === Config ===
 TELEGRAM_TOKEN = '7970022703:AAEFU0v_402lujK3-FHkP6xW0NXKeteco3U'
 TELEGRAM_CHAT_ID = '-1001875640464'
-BEARER_TOKEN = 'AAAAAAAAAAAAAAAAAAAAAA5n2gEAAAAALRZu85jICz2w1EgailHagT3HtIk%3DSb4q6gejim2qIlOrLgKUGdWn1x45lLj2Y2N3VqoliZ6VNUGzt5'
+BEARER_TOKEN = 'AAAAAAAAAAAAAAAAAAAAAA5n2gEAAAAA26eHEzWzzxcv%2FPF6qWgLhkX7tIY%3DMcYpMvmrA2wGHiDmZiw4N6dQfmcSCsfXZ5Co5xOwkZUUFw4BeE'
 
-# === Map username → user_id ===
 TWITTER_USERS = {
     'JnP6900erc': '1644057593241622529',
     'elonmusk': '44196397',
@@ -14,10 +13,8 @@ TWITTER_USERS = {
     'VitalikButerin': '295218901'
 }
 
-# === Lưu trạng thái tweet cuối ===
 last_tweet_ids = {}
 
-# === Gửi Telegram ===
 def send_telegram_message(text):
     url = f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage'
     data = {'chat_id': TELEGRAM_CHAT_ID, 'text': text}
@@ -28,7 +25,6 @@ def send_telegram_message(text):
     except Exception as e:
         print(f'⚠️ Lỗi gửi Telegram: {e}')
 
-# === Lấy tweet mới nhất của user ===
 def get_latest_tweet(user_id):
     url = f'https://api.twitter.com/2/users/{user_id}/tweets?max_results=5&tweet.fields=created_at'
     headers = {'Authorization': f'Bearer {BEARER_TOKEN}'}
@@ -41,22 +37,28 @@ def get_latest_tweet(user_id):
         print(f'⚠️ Lỗi khi lấy tweet user {user_id}: {e}')
         return None
 
-# === Bot chạy vĩnh viễn ===
 def main():
-    print(f"👀 Đang theo dõi: {', '.join(TWITTER_USERS.keys())}")
+    usernames = list(TWITTER_USERS.keys())
+    index = 0
+
+    print(f"👀 Theo dõi {len(usernames)} người: {', '.join(usernames)}")
 
     while True:
-        for username, user_id in TWITTER_USERS.items():
-            tweet = get_latest_tweet(user_id)
-            if tweet:
-                tweet_id = tweet['id']
-                if last_tweet_ids.get(username) != tweet_id:
-                    url = f"https://x.com/{username}/status/{tweet_id}"
-                    msg = f"🧵 Tweet mới từ @{username}:\n\n{tweet['text']}\n\n{url}"
-                    send_telegram_message(msg)
-                    last_tweet_ids[username] = tweet_id
-                    print(f"[+] Đã gửi tweet mới của @{username}")
-        time.sleep(60)
+        username = usernames[index]
+        user_id = TWITTER_USERS[username]
+
+        tweet = get_latest_tweet(user_id)
+        if tweet:
+            tweet_id = tweet['id']
+            if last_tweet_ids.get(username) != tweet_id:
+                url = f"https://x.com/{username}/status/{tweet_id}"
+                msg = f"🧵 Tweet mới từ @{username}:\n\n{tweet['text']}\n\n{url}"
+                send_telegram_message(msg)
+                last_tweet_ids[username] = tweet_id
+                print(f"[+] Gửi tweet của @{username}")
+
+        index = (index + 1) % len(usernames)
+        time.sleep(20)  # mỗi user cách nhau 20s → đủ giãn
 
 if __name__ == '__main__':
     main()
