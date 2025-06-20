@@ -1,51 +1,45 @@
+import snscrape.modules.twitter as sntwitter
 import requests
 import time
 
 # === Config ===
 TELEGRAM_TOKEN = '7970022703:AAEFU0v_402lujK3-FHkP6xW0NXKeteco3U'
 TELEGRAM_CHAT_ID = '-1001875640464'
-BEARER_TOKEN = 'AAAAAAAAAAAAAAAAAAAAAFRw2gEAAAAA%2BExEdgA%2FxD7H2%2Fa85eLrSthDhRs%3DJu2Upomn3F7Ecn7g4KQgMpZVTrZL1cxJx0tqoHTJ8nQcvnmqtg'
-USERNAME = 'JnP6900erc'
-USER_ID = '1644057593241622529'
+USERNAME = 'elonmusk'  # Thay tên khác nếu muốn
+CHECK_INTERVAL = 60  # giây
 
 last_tweet_id = None
 
 def send_telegram_message(text):
     url = f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage'
     data = {'chat_id': TELEGRAM_CHAT_ID, 'text': text}
-    try:
-        r = requests.post(url, data=data)
-        if r.status_code != 200:
-            print(f'⚠️ Telegram lỗi: {r.text}')
-    except Exception as e:
-        print(f'⚠️ Lỗi gửi Telegram: {e}')
+    r = requests.post(url, data=data)
+    if r.status_code != 200:
+        print(f'⚠️ Telegram error: {r.text}')
 
 def get_latest_tweet():
-    url = f'https://api.twitter.com/2/users/{USER_ID}/tweets?max_results=5&tweet.fields=created_at'
-    headers = {'Authorization': f'Bearer {BEARER_TOKEN}'}
     try:
-        r = requests.get(url, headers=headers)
-        r.raise_for_status()
-        tweets = r.json().get('data', [])
-        return tweets[0] if tweets else None
+        scraper = sntwitter.TwitterUserScraper(USERNAME)
+        tweet = next(scraper.get_items())
+        return tweet
     except Exception as e:
-        print(f'⚠️ Lỗi lấy tweet: {e}')
+        print(f'⚠️ Lỗi khi scrape tweet: {e}')
         return None
 
 def main():
     global last_tweet_id
-    print(f"👀 Đang theo dõi: {USERNAME}")
+    print(f"👁️ Đang theo dõi @{USERNAME} không cần API chính chủ")
 
     while True:
         tweet = get_latest_tweet()
-        if tweet:
-            tweet_id = tweet['id']
-            if last_tweet_id != tweet_id:
-                msg = f"🧵 Tweet mới từ @{USERNAME}:\n\n{tweet['text']}\n\nhttps://x.com/{USERNAME}/status/{tweet_id}"
-                send_telegram_message(msg)
-                last_tweet_id = tweet_id
-                print(f"[+] Gửi tweet @{USERNAME}")
-        time.sleep(65)
+        if tweet and tweet.id != last_tweet_id:
+            msg = f"🧵 Tweet mới từ @{USERNAME}:\n\n{tweet.content}\n\nhttps://x.com/{USERNAME}/status/{tweet.id}"
+            send_telegram_message(msg)
+            last_tweet_id = tweet.id
+            print(f"✅ Đã gửi tweet: {tweet.id}")
+        else:
+            print("⌛ Không có tweet mới.")
+        time.sleep(CHECK_INTERVAL)
 
 if __name__ == '__main__':
     main()
