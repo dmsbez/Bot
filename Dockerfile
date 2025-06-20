@@ -2,9 +2,12 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-# Cài chứng chỉ gốc để xác thực HTTPS
+# Cài thêm CA cert để tránh lỗi SSL
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
+    curl \
+    gnupg \
+    && update-ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 COPY . .
