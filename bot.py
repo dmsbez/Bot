@@ -1,6 +1,4 @@
 import ssl
-
-# Tạm bỏ qua verify SSL (KHÔNG nên dùng lâu dài)
 ssl._create_default_https_context = ssl._create_unverified_context
 import os
 import certifi
