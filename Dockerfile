@@ -2,15 +2,16 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-# Cài certs và fix SSL verification
+# Install certificate stuff + curl + build tools nếu cần
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        ca-certificates \
-        curl \
-        gnupg \
-        openssl && \
-    update-ca-certificates && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+    ca-certificates \
+    openssl \
+    curl \
+    gnupg \
+    && update-ca-certificates \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY . .
 
